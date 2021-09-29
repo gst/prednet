@@ -3,15 +3,19 @@ Code for downloading and processing KITTI data (Geiger et al. 2013, http://www.c
 '''
 
 import os
+import sys
 import requests
 from bs4 import BeautifulSoup
 import urllib.request
 import numpy as np
 from imageio import imread
-from scipy.misc import imresize
+from cv2 import resize as imresize
 import hickle as hkl
 from kitti_settings import *
 
+
+email = sys.argv[1]
+password = sys.argv[2]
 
 desired_im_sz = (128, 160)
 categories = ['city', 'residential', 'road']
@@ -23,13 +27,18 @@ test_recordings = [('city', '2011_09_26_drive_0104_sync'), ('residential', '2011
 
 if not os.path.exists(DATA_DIR): os.mkdir(DATA_DIR)
 
+
 # Download raw zip files by scraping KITTI website
 def download_data():
     base_dir = os.path.join(DATA_DIR, 'raw/')
     if not os.path.exists(base_dir): os.mkdir(base_dir)
+    url = "http://www.cvlibs.net/datasets/kitti/user_login_check.php"
+    sess = requests.sessions.Session()
+    r = sess.post(url, data={'email': email, 'password': password})
+    print(r)
     for c in categories:
         url = "http://www.cvlibs.net/datasets/kitti/raw_data.php?type=" + c
-        r = requests.get(url)
+        r = sess.get(url)
         soup = BeautifulSoup(r.content)
         drive_list = soup.find_all("h3")
         drive_list = [d.text[:d.text.find(' ')] for d in drive_list]
